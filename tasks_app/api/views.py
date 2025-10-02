@@ -51,7 +51,7 @@ class TaskDetailView(APIView):
 
     def patch(self, request, pk, format=None):
         task = self.get_object(pk)
-        serializer = TaskDetailSerializer(task, data=request.data, partial=True)
+        serializer = TaskCreateUpdateSerializer(task, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
