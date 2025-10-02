@@ -3,14 +3,66 @@ from rest_framework import generics, permissions, status
 from .serializers import TaskCreateUpdateSerializer, TaskDetailSerializer, CommentCreateSerielizer
 from django.db.models import Q
 from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
-
-
+from rest_framework.views import APIView
+from rest_framework.exceptions import NotFound, PermissionDenied
 
 class TaskCreateView(generics.CreateAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskCreateUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+# class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Task.objects.all()
+#     serializer_class= TaskDetailSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get_object(self):
+#         pk = self.kwargs.get('pk')
+#         try:
+#             obj = Task.objects.get(pk=pk)
+#         except Task.DoesNotExist:
+#             raise NotFound("Task nicht gefunden.")
+
+#         user = self.request.user
+#         if not (obj.assignee == user or obj.board.owner == user):
+#             raise PermissionDenied("Keine Berechtigung, diese Task zu bearbeiten oder zu löschen.")
+
+#         return obj
+
+class TaskDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            obj = Task.objects.get(pk=pk)
+        except Task.DoesNotExist:
+            raise NotFound("Task nicht gefunden.")
+
+        user = self.request.user
+        if not (obj.assignee == user or obj.board.owner == user):
+            raise PermissionDenied("Keine Berechtigung, diese Task zu bearbeiten oder zu löschen.")
+        return obj
+
+    def get(self, request, pk, format=None):
+        task = self.get_object(pk)
+        serializer = TaskDetailSerializer(task)
+        return Response(serializer.data)
+
+    def patch(self, request, pk, format=None):
+        task = self.get_object(pk)
+        serializer = TaskDetailSerializer(task, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk, format=None):
+        task = self.get_object(pk)
+        task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
 
 
 class TasksAssignedView(generics.ListAPIView):
@@ -52,24 +104,22 @@ class CommentsView(generics.ListCreateAPIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 
-class CommentDeleteView(generics.DestroyAPIView):
-    queryset = Comment.objects.all()
+
+
+
+
+
+class CommentDeleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):
-        pk = self.kwargs.get("pk")
+    def delete(self, request, task_id, pk):
+        user = request.user
         try:
             comment = Comment.objects.get(pk=pk)
         except Comment.DoesNotExist:
-            from rest_framework.exceptions import NotFound
-            raise NotFound("Kommentar nicht gefunden.")
-
-        user = self.request.user
+            return Response({"detail": "Komemntar nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
         if comment.author != user:
-            from rest_framework.exceptions import PermissionDenied
-            raise PermissionDenied("Du hast keine Berechtigung, diesen Kommentar zu löschen.")
-
-        return comment  
-
-    def delete(self, request, *args, **kwargs):
-        return self.destroy(request, *args, **kwargs)
+            return Response({"detail": "Keine Berechtigung"}, status=status.HTTP_403_FORBIDDEN)
+        
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
