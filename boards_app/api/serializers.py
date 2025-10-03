@@ -30,15 +30,12 @@ class BoardSerializer(serializers.ModelSerializer):
         return obj.members.count()
 
     def get_ticket_count(self, obj):
-        # später durch tatsächliche Tickets ersetzen
         return 0
 
     def get_tasks_to_do_count(self, obj):
-        # später durch echte Tasks ersetzen
         return 0
 
     def get_tasks_high_prio_count(self, obj):
-        # später durch echte Tasks ersetzen
         return 0
     
     def create(self, validated_data):

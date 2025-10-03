@@ -6,6 +6,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.views import APIView
+from rest_framework import permissions
+
 
 class SignupView(generics.ListCreateAPIView):
     queryset = User.objects.all()
@@ -48,6 +50,8 @@ class UserLoginView(ObtainAuthToken):
 
 
 class MailCheckView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    
     def get(self, request):
         email = request.query_params.get("email")
         if not email:

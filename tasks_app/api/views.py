@@ -5,33 +5,16 @@ from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound, PermissionDenied
+from .permissions import IsBoardMember, IsBoardOwnerOrMemberAndImmutableBoard, IsCommentAuthor
 
 class TaskCreateView(generics.CreateAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskCreateUpdateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsBoardMember]
 
-
-# class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
-#     queryset = Task.objects.all()
-#     serializer_class= TaskDetailSerializer
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get_object(self):
-#         pk = self.kwargs.get('pk')
-#         try:
-#             obj = Task.objects.get(pk=pk)
-#         except Task.DoesNotExist:
-#             raise NotFound("Task nicht gefunden.")
-
-#         user = self.request.user
-#         if not (obj.assignee == user or obj.board.owner == user):
-#             raise PermissionDenied("Keine Berechtigung, diese Task zu bearbeiten oder zu löschen.")
-
-#         return obj
 
 class TaskDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsBoardOwnerOrMemberAndImmutableBoard]
 
     def get_object(self, pk):
         try:
@@ -83,7 +66,7 @@ class TasksReviewedView(generics.ListAPIView):
     
 class CommentsView(generics.ListCreateAPIView):
     serializer_class = CommentCreateSerielizer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsBoardMember]
 
     def get_queryset(self):
         task_id = self.kwargs.get("task_id")
@@ -104,22 +87,21 @@ class CommentsView(generics.ListCreateAPIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
 
-
-
-
-
-
 class CommentDeleteView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsCommentAuthor]
+
+    def get_object(self, pk):
+        try:
+            return Comment.objects.get(pk=pk)
+        except Comment.DoesNotExist:
+            return None
 
     def delete(self, request, task_id, pk):
-        user = request.user
-        try:
-            comment = Comment.objects.get(pk=pk)
-        except Comment.DoesNotExist:
-            return Response({"detail": "Komemntar nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
-        if comment.author != user:
-            return Response({"detail": "Keine Berechtigung"}, status=status.HTTP_403_FORBIDDEN)
-        
+        comment = self.get_object(pk)
+        if not comment:
+            return Response({"detail": "Kommentar nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
+
+        self.check_object_permissions(request, comment)
+
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

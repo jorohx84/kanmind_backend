@@ -4,7 +4,7 @@ from .serializers import BoardSerializer, SingleBoardSerializer
 from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.views import APIView
-
+from .permissions import  IsBoardOwnerOrMember
 
 
 class BoardCreateView(generics.ListCreateAPIView):
@@ -20,36 +20,73 @@ class BoardCreateView(generics.ListCreateAPIView):
 
 
 
+# class BoardDetailView(APIView):
+#     permission_classes = [permissions.IsAuthenticated, IsBoardOwnerOrMember]
+
+#     def get(self, request, pk):
+#         try:
+#             board=Board.objects.get(pk=pk)
+#         except Board.DoesNotExist:
+#             return Response({"detail": "Board not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+#         self.check_object_permissions(request, board)
+
+#         serializer = SingleBoardSerializer(board)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
+
+#     def patch(self, request, pk):
+#         try:
+#             board = Board.objects.get(pk=pk)
+#         except Board.DoesNotExist:
+#             return Response({"detail": "Board not found."}, status=status.HTTP_404_NOT_FOUND)
+
+#         self.check_object_permissions(request, board)
+
+#         serializer = BoardSerializer(board, data=request.data, partial=True, context={"request": request}
+#         )
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+#     def delete(self, request, pk):
+#         try:
+#             board = Board.objects.get(pk=pk)
+#         except Board.DoesNotExist:
+#             return Response({"detail": "Board not found."}, status=status.HTTP_404_NOT_FOUND)
+        
+#         self.check_object_permissions(request, board)
+        
+#         board.delete()
+#         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
 class BoardDetailView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsBoardOwnerOrMember]
+
+    def get_object_and_check_permissions(self, pk):
+        try:
+            board = Board.objects.get(pk=pk)
+        except Board.DoesNotExist:
+            return Response({"detail": "Board nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
+        
+        self.check_object_permissions(self.request, board)
+        return board
 
     def get(self, request, pk):
-        try:
-            board=Board.objects.get(pk=pk)
-        except Board.DoesNotExist:
-            return Response({"detail": "Board not found."}, status=status.HTTP_404_NOT_FOUND)
-    
+        board = self.get_object_and_check_permissions(pk)
         serializer = SingleBoardSerializer(board)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, pk):
-        try:
-            board = Board.objects.get(pk=pk)
-        except Board.DoesNotExist:
-            return Response({"detail": "Board not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = BoardSerializer(board, data=request.data, partial=True, context={"request": request}
-        )
+        board = self.get_object_and_check_permissions(pk)
+        serializer = BoardSerializer(board, data=request.data, partial=True, context={"request": request})
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        try:
-            board = Board.objects.get(pk=pk)
-        except Board.DoesNotExist:
-            return Response({"detail": "Board not found."}, status=status.HTTP_404_NOT_FOUND)
-
+        board = self.get_object_and_check_permissions(pk)
         board.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
