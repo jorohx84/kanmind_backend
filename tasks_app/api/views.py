@@ -21,11 +21,11 @@ class TaskDetailView(APIView):
             obj = Task.objects.get(pk=pk)
         except Task.DoesNotExist:
             raise NotFound("Task nicht gefunden.")
-
-        user = self.request.user
-        if not (obj.assignee == user or obj.board.owner == user):
-            raise PermissionDenied("Keine Berechtigung, diese Task zu bearbeiten oder zu löschen.")
         return obj
+        # user = self.request.user
+        # if not (obj.assignee == user or obj.board.owner == user):
+        #     raise PermissionDenied("Keine Berechtigung, diese Task zu bearbeiten oder zu löschen.")
+        # return obj
 
     def get(self, request, pk, format=None):
         task = self.get_object(pk)
