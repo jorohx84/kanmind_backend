@@ -9,6 +9,18 @@ from .serializers import RegistrationSerializer, LoginSerializer, MailCheckSeria
 
 
 class SignupView(generics.ListCreateAPIView):
+    """
+    API endpoint that allows users to register a new account.
+
+    GET:
+        Returns a list of all users (mainly for admin/testing purposes).
+    POST:
+        Registers a new user with the provided data.
+        Returns an authentication token along with basic user info.
+
+    Uses:
+    - RegistrationSerializer for validation and user creation.
+    """
     queryset = User.objects.all()
     serializer_class = RegistrationSerializer
 
@@ -24,12 +36,21 @@ class SignupView(generics.ListCreateAPIView):
             "user_id": user.id,
             "email": user.email,
             "fullname": user.first_name,
-
         }, status=status.HTTP_201_CREATED)
-    
 
 
 class UserLoginView(ObtainAuthToken):
+    """
+    API endpoint to log in a user.
+
+    POST:
+        Validates user credentials.
+        Returns an authentication token along with basic user info.
+
+    Uses:
+    - LoginSerializer for validation.
+    - DRF's TokenAuthentication to generate or retrieve tokens.
+    """
     serializer_class = LoginSerializer
     
     def post(self, request):
@@ -44,12 +65,20 @@ class UserLoginView(ObtainAuthToken):
             "user_id": user.id,
             "email": user.email,
             "fullname": user.first_name,
-
         }, status=status.HTTP_200_OK)
 
-        
 
 class MailCheckView(GenericAPIView):
+    """
+    API endpoint to check if an email is registered.
+
+    GET:
+        Accepts an 'email' query parameter.
+        Returns user info if email exists, otherwise 404.
+
+    Permissions:
+    - Requires the user to be authenticated.
+    """
     serializer_class = MailCheckSerializer
     permission_classes = [permissions.IsAuthenticated]
 

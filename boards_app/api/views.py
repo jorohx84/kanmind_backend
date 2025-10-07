@@ -8,27 +8,54 @@ from .permissions import IsBoardOwnerOrMember
 from .serializers import BoardSerializer, SingleBoardSerializer
 
 class BoardCreateView(generics.ListCreateAPIView):
+    """
+    API view to list all boards the authenticated user owns or is a member of,
+    and to create new boards.
+
+    Permissions:
+    - Only authenticated users can access this view.
+
+    Methods:
+    - GET: Returns a list of boards filtered by ownership or membership.
+    - POST: Creates a new board with the authenticated user as the owner.
+    """
     serializer_class = BoardSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
+        # Return boards where user is owner or a member
         return Board.objects.filter(Q(owner=user) | Q(members=user)).distinct()
 
     def perform_create(self, serializer):
+        # Save the board with the current user as owner handled in serializer
         serializer.save()
 
-    
 
 class BoardDetailView(APIView):
+    """
+    API view to retrieve, update (partial), or delete a specific board.
+
+    Permissions:
+    - Only authenticated users who are the board owner or a member can access.
+    
+    Methods:
+    - GET: Retrieve the detailed data of the board.
+    - PATCH: Partially update the board data.
+    - DELETE: Delete the board.
+    """
+
     permission_classes = [permissions.IsAuthenticated, IsBoardOwnerOrMember]
 
     def get_object_and_check_permissions(self, pk):
+        """
+        Retrieve the Board object by primary key and check object-level permissions.
+        Raises NotFound if board does not exist.
+        """
         try:
             board = Board.objects.get(pk=pk)
         except Board.DoesNotExist:
-            raise NotFound("Board nicht gefunden.")
-    
+            raise NotFound("Board not found.")
         self.check_object_permissions(self.request, board)
         return board
 

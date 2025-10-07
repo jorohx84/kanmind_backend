@@ -4,6 +4,19 @@ from boards_app.models import Board
 
 
 class IsBoardMember(permissions.BasePermission):
+    """
+    Permission to check if the user is a member or owner of a Board.
+
+    Permission is granted if:
+    - For POST, PUT, PATCH requests: the board ID is extracted from request.data['board'].
+    - For GET, DELETE requests: the board ID is extracted from the view's URL kwargs (either 'pk' or 'board_id').
+
+    Then it checks if:
+    - The board exists.
+    - The user is either the board owner or a member of the board.
+
+    If the board does not exist, a NotFound exception is raised.
+    """
 
     def has_permission(self, request, view):
         board_id = None
@@ -19,15 +32,26 @@ class IsBoardMember(permissions.BasePermission):
         try:
             board = Board.objects.get(pk=board_id)
         except Board.DoesNotExist:
-            raise NotFound("Board nicht gefunden.")
+            raise NotFound("Board not found.")
 
         user = request.user
         return board.owner == user or user in board.members.all()
     
 
 class IsBoardOwnerOrMemberAndImmutableBoard(permissions.BasePermission):
+    """
+    Object-level permission to allow only Board owner or members to edit Tasks.
 
-    message = "Nur der Board-Eigentümer oder ein Board-Mitglied dürfen diese Task bearbeiten. Die Board-Zuordnung darf nicht geändert werden."
+    Restrictions:
+    - Only the board owner or members can have permission.
+    - The task’s board association ('board' field) cannot be changed once set.
+
+    Raises:
+    - PermissionDenied if the user is not owner or member.
+    - PermissionDenied if attempting to change the task's board.
+    """
+
+    message = "Only the Board owner or a member may edit this task. Changing the board association is not allowed."
 
     def has_object_permission(self, request, view, obj):
         user = request.user
@@ -37,12 +61,18 @@ class IsBoardOwnerOrMemberAndImmutableBoard(permissions.BasePermission):
         if request.method in ['PATCH', 'PUT']:
             new_board_id = request.data.get('board')
             if new_board_id and int(new_board_id) != obj.board.id:
-                raise PermissionDenied("Ändern der Board-Zuordnung ist nicht erlaubt.")
+                raise PermissionDenied("Changing the board association is not allowed.")
 
         return True
 
 class IsCommentAuthor(permissions.BasePermission):
-    message = "Nur der Autor des Kommentars darf diese Aktion durchführen."
+    """
+    Object-level permission to allow only the author of a comment to perform actions.
+
+    Returns True if the requesting user is the author of the comment, otherwise False.
+    """
+
+    message = "Only the author of the comment can perform this action."
 
     def has_object_permission(self, request, view, obj):
         return obj.author == request.user

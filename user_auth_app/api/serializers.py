@@ -5,6 +5,24 @@ from user_auth_app.models import UserProfile
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration.
+
+    Fields:
+    - fullname: full name of the user (write-only)
+    - email: user's email address
+    - password: user's password (write-only)
+    - repeated_password: confirmation of the password (write-only)
+
+    Validates:
+    - Email must be unique.
+    - Password and repeated_password must match.
+
+    On creation:
+    - Creates a new User instance with username set to email.
+    - Sets the password securely.
+    - Creates a related UserProfile instance.
+    """
     fullname = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True, min_length=8)
     repeated_password = serializers.CharField(write_only=True)
@@ -27,19 +45,29 @@ class RegistrationSerializer(serializers.ModelSerializer):
         validated_data.pop('repeated_password')
 
         user = User.objects.create(
-            username = validated_data['email'],
-            email = validated_data['email'],
-            first_name = fullname, 
+            username=validated_data['email'],
+            email=validated_data['email'],
+            first_name=fullname,
         )
         user.set_password(password)
         user.save()
-        
+
         UserProfile.objects.create(user=user)
 
         return user
-    
+
 
 class LoginSerializer(serializers.Serializer):
+    """
+    Serializer for user login.
+
+    Fields:
+    - email: user's email address
+    - password: user's password (write-only)
+
+    Validates:
+    - Checks if the provided email and password authenticate a user.
+    """
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
@@ -50,19 +78,34 @@ class LoginSerializer(serializers.Serializer):
         user = authenticate(username=email, password=password)
         if not user:
             raise serializers.ValidationError({"error": "Invalid email or password"})
-        
+
         attrs["user"] = user
         return attrs
-    
 
 
 class MailCheckSerializer(serializers.ModelSerializer):
+    """
+    Serializer for checking user email existence and basic info.
+
+    Fields:
+    - id: user ID
+    - email: user email
+    - first_name: user's first name
+    """
     class Meta:
         model = User
         fields = ["id", "email", "first_name"]
-    
+
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer to represent a user with fullname.
+
+    Fields:
+    - id: user ID
+    - email: user email
+    - fullname: concatenation of first_name and last_name if user profile exists
+    """
     fullname = serializers.SerializerMethodField()
 
     class Meta:
