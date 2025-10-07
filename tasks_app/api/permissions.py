@@ -1,7 +1,6 @@
 from rest_framework import permissions
-from rest_framework.exceptions import NotFound
-from boards_app.models import Board  
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import NotFound, PermissionDenied
+from boards_app.models import Board
 
 
 class IsBoardMember(permissions.BasePermission):

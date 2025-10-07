@@ -1,11 +1,11 @@
-from rest_framework import generics, permissions, status
-from boards_app.models import Board
-from .serializers import BoardSerializer, SingleBoardSerializer
-from rest_framework.response import Response
 from django.db.models import Q
+from rest_framework import generics, permissions, status
+from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
 from rest_framework.views import APIView
-from .permissions import  IsBoardOwnerOrMember
-
+from boards_app.models import Board
+from .permissions import IsBoardOwnerOrMember
+from .serializers import BoardSerializer, SingleBoardSerializer
 
 class BoardCreateView(generics.ListCreateAPIView):
     serializer_class = BoardSerializer
@@ -18,47 +18,6 @@ class BoardCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save()
 
-
-
-# class BoardDetailView(APIView):
-#     permission_classes = [permissions.IsAuthenticated, IsBoardOwnerOrMember]
-
-#     def get(self, request, pk):
-#         try:
-#             board=Board.objects.get(pk=pk)
-#         except Board.DoesNotExist:
-#             return Response({"detail": "Board not found."}, status=status.HTTP_404_NOT_FOUND)
-    
-#         self.check_object_permissions(request, board)
-
-#         serializer = SingleBoardSerializer(board)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-
-#     def patch(self, request, pk):
-#         try:
-#             board = Board.objects.get(pk=pk)
-#         except Board.DoesNotExist:
-#             return Response({"detail": "Board not found."}, status=status.HTTP_404_NOT_FOUND)
-
-#         self.check_object_permissions(request, board)
-
-#         serializer = BoardSerializer(board, data=request.data, partial=True, context={"request": request}
-#         )
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#     def delete(self, request, pk):
-#         try:
-#             board = Board.objects.get(pk=pk)
-#         except Board.DoesNotExist:
-#             return Response({"detail": "Board not found."}, status=status.HTTP_404_NOT_FOUND)
-        
-#         self.check_object_permissions(request, board)
-        
-#         board.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
     
 
 class BoardDetailView(APIView):
@@ -68,8 +27,8 @@ class BoardDetailView(APIView):
         try:
             board = Board.objects.get(pk=pk)
         except Board.DoesNotExist:
-            return Response({"detail": "Board nicht gefunden."}, status=status.HTTP_404_NOT_FOUND)
-        
+            raise NotFound("Board nicht gefunden.")
+    
         self.check_object_permissions(self.request, board)
         return board
 

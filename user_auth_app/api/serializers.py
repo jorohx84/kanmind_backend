@@ -1,7 +1,8 @@
-from rest_framework import serializers
-from django.contrib.auth.models import User
-from user_auth_app.models import UserProfile
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from rest_framework import serializers
+from user_auth_app.models import UserProfile
+
 
 class RegistrationSerializer(serializers.ModelSerializer):
     fullname = serializers.CharField(write_only=True)

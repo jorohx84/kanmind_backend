@@ -1,11 +1,12 @@
-from tasks_app.models import Task, Comment
-from rest_framework import generics, permissions, status
-from .serializers import TaskCreateUpdateSerializer, TaskDetailSerializer, CommentCreateSerielizer
 from django.db.models import Q
+from rest_framework import generics, permissions, status
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.exceptions import NotFound, PermissionDenied
+from tasks_app.models import Task, Comment
 from .permissions import IsBoardMember, IsBoardOwnerOrMemberAndImmutableBoard, IsCommentAuthor
+from .serializers import TaskCreateUpdateSerializer, TaskDetailSerializer, CommentCreateSerielizer
+
 
 class TaskCreateView(generics.CreateAPIView):
     queryset = Task.objects.all()
@@ -66,7 +67,7 @@ class TasksReviewedView(generics.ListAPIView):
     
 class CommentsView(generics.ListCreateAPIView):
     serializer_class = CommentCreateSerielizer
-    permission_classes = [permissions.IsAuthenticated, IsBoardMember]
+    permission_classes = [permissions.IsAuthenticated, IsBoardOwnerOrMemberAndImmutableBoard]
 
     def get_queryset(self):
         task_id = self.kwargs.get("task_id")
