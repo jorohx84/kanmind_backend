@@ -1,15 +1,15 @@
-1.Create and activate a virtual environment
+1.Create and activate a virtual environment:
 
 python3 -m venv env
 source env/bin/activate 
 
 
-2.Install dependencies
+2.Install dependencies:
 
 pip install -r requirements.txt
 
 
-3.Apply database migrations
+3.Apply database migrations:
 
 python manage.py migrate
 
