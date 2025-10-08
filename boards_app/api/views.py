@@ -24,11 +24,9 @@ class BoardCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        # Return boards where user is owner or a member
         return Board.objects.filter(Q(owner=user) | Q(members=user)).distinct()
 
     def perform_create(self, serializer):
-        # Save the board with the current user as owner handled in serializer
         serializer.save()
 
 
