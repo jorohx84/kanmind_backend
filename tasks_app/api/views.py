@@ -20,6 +20,14 @@ class TaskCreateView(generics.CreateAPIView):
     serializer_class = TaskCreateUpdateSerializer
     permission_classes = [permissions.IsAuthenticated, IsBoardMember]
 
+    def create(self, request):
+        input_serializer = self.get_serializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+        task = input_serializer.save()
+
+        output_serializer = TaskDetailSerializer(task)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+  
 
 class TaskDetailView(APIView):
     """
