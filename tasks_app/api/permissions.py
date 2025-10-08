@@ -1,41 +1,70 @@
 from rest_framework import permissions
 from rest_framework.exceptions import NotFound, PermissionDenied
 from boards_app.models import Board
+from ..models import Task
 
+
+# class IsBoardMember(permissions.BasePermission):
+#     """
+#     Permission to check if the user is a member or owner of a Board.
+
+#     Permission is granted if:
+#     - For POST, PUT, PATCH requests: the board ID is extracted from request.data['board'].
+#     - For GET, DELETE requests: the board ID is extracted from the view's URL kwargs (either 'pk' or 'board_id').
+
+#     Then it checks if:
+#     - The board exists.
+#     - The user is either the board owner or a member of the board.
+
+#     If the board does not exist, a NotFound exception is raised.
+#     """
+
+#     def has_permission(self, request, view):
+#         board_id = None
+
+#         if request.method in ['POST', 'PUT', 'PATCH']:
+#             board_id = request.data.get('board')
+#         elif request.method in ['GET', 'DELETE']:
+#             board_id = view.kwargs.get('pk') or view.kwargs.get('board_id')
+
+#         if not board_id:
+#             return False
+
+#         try:
+#             board = Board.objects.get(pk=board_id)
+#         except Board.DoesNotExist:
+#             raise NotFound("Board not found.")
+
+#         user = request.user
+#         return user in board.members.all()
+    
 
 class IsBoardMember(permissions.BasePermission):
-    """
-    Permission to check if the user is a member or owner of a Board.
-
-    Permission is granted if:
-    - For POST, PUT, PATCH requests: the board ID is extracted from request.data['board'].
-    - For GET, DELETE requests: the board ID is extracted from the view's URL kwargs (either 'pk' or 'board_id').
-
-    Then it checks if:
-    - The board exists.
-    - The user is either the board owner or a member of the board.
-
-    If the board does not exist, a NotFound exception is raised.
-    """
+    message = "You must be a member of the board to perform this action."
 
     def has_permission(self, request, view):
-        board_id = None
-
-        if request.method in ['POST', 'PUT', 'PATCH']:
-            board_id = request.data.get('board')
-        elif request.method in ['GET', 'DELETE']:
-            board_id = view.kwargs.get('pk') or view.kwargs.get('board_id')
+        board_id = request.data.get('board')
+    
 
         if not board_id:
-            return False
+            task_id = view.kwargs.get('task_id') or view.kwargs.get('pk')
+            if not task_id:
+                return False
 
-        try:
-            board = Board.objects.get(pk=board_id)
-        except Board.DoesNotExist:
-            raise NotFound("Board not found.")
+            try:
+                task = Task.objects.get(pk=task_id)
+                board = task.board
+     
+            except Task.DoesNotExist:
+                raise NotFound("Task not found.")
+        else:
+            try:
+                board = Board.objects.get(pk=board_id)
+            except Board.DoesNotExist:
+                raise NotFound("Board not found.")
 
-        user = request.user
-        return board.owner == user or user in board.members.all()
+        is_member = board.members.filter(pk=request.user.pk).exists()
+        return is_member
     
 
 class IsBoardOwnerOrMemberAndImmutableBoard(permissions.BasePermission):

@@ -83,19 +83,6 @@ class LoginSerializer(serializers.Serializer):
         return attrs
 
 
-class MailCheckSerializer(serializers.ModelSerializer):
-    """
-    Serializer for checking user email existence and basic info.
-
-    Fields:
-    - id: user ID
-    - email: user email
-    - first_name: user's first name
-    """
-    class Meta:
-        model = User
-        fields = ["id", "email", "first_name"]
-
 
 class UserSerializer(serializers.ModelSerializer):
     """

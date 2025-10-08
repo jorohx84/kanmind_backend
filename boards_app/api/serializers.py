@@ -79,7 +79,34 @@ class SingleBoardSerializer(serializers.ModelSerializer):
     """
     members = UserSerializer(many=True, read_only=True)
     tasks = TaskDetailSerializer(many=True, read_only=True)
+    
 
     class Meta:
         model = Board
         fields = ["id", "title", "owner_id", "members", "tasks"]
+
+
+
+class BoardUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer used for updating a Board instance via PATCH requests.
+
+    - Accepts a list of member user IDs in the 'members' field (write-only).
+    - Returns detailed user data for the updated members via 'members_data'.
+    - Returns detailed user data for the board owner via 'owner_data'.
+    - This serializer is intended only for updating board title and members.
+    """
+    members = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=User.objects.all(), write_only=True
+    )
+    members_data = UserSerializer(source='members', many=True, read_only=True)
+    owner_data = UserSerializer(source='owner', read_only=True)
+
+    class Meta:
+        model = Board
+        fields = [
+            "id", "title",
+            "members",       
+            "members_data",  
+            "owner_data",    
+        ]

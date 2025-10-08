@@ -4,7 +4,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.generics import GenericAPIView
 from rest_framework.response import Response
-from .serializers import RegistrationSerializer, LoginSerializer, MailCheckSerializer
+from .serializers import RegistrationSerializer, LoginSerializer, UserSerializer
 
 
 
@@ -79,7 +79,7 @@ class MailCheckView(GenericAPIView):
     Permissions:
     - Requires the user to be authenticated.
     """
-    serializer_class = MailCheckSerializer
+    serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):

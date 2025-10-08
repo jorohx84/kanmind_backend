@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from boards_app.models import Board
 from .permissions import IsBoardOwnerOrMember
-from .serializers import BoardSerializer, SingleBoardSerializer
+from .serializers import BoardSerializer, SingleBoardSerializer, BoardUpdateSerializer
 
 class BoardCreateView(generics.ListCreateAPIView):
     """
@@ -66,7 +66,7 @@ class BoardDetailView(APIView):
 
     def patch(self, request, pk):
         board = self.get_object_and_check_permissions(pk)
-        serializer = BoardSerializer(board, data=request.data, partial=True, context={"request": request})
+        serializer = BoardUpdateSerializer(board, data=request.data, partial=True, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

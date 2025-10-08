@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from tasks_app.models import Task, Comment
 from .permissions import IsBoardMember, IsBoardOwnerOrMemberAndImmutableBoard, IsCommentAuthor
-from .serializers import TaskCreateUpdateSerializer, TaskDetailSerializer, CommentCreateSerielizer
+from .serializers import TaskCreateUpdateSerializer, TaskDetailSerializer, CommentCreateSerielizer, TaskUpdateSerializer
 
 
 class TaskCreateView(generics.CreateAPIView):
@@ -30,7 +30,7 @@ class TaskDetailView(APIView):
     - User must be Board owner or member.
     - Board assignment cannot be changed on update.
     """
-    permission_classes = [permissions.IsAuthenticated, IsBoardOwnerOrMemberAndImmutableBoard]
+    permission_classes = [permissions.IsAuthenticated, IsBoardMember]
 
     def get_object(self, pk):
         """Retrieve Task by primary key or raise NotFound if it does not exist."""
@@ -49,7 +49,7 @@ class TaskDetailView(APIView):
     def patch(self, request, pk, format=None):
         """Partially update a task."""
         task = self.get_object(pk)
-        serializer = TaskCreateUpdateSerializer(task, data=request.data, partial=True)
+        serializer = TaskUpdateSerializer(task, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -95,11 +95,20 @@ class CommentsView(generics.ListCreateAPIView):
     - User must be Board owner or member.
     """
     serializer_class = CommentCreateSerielizer
-    permission_classes = [permissions.IsAuthenticated, IsBoardOwnerOrMemberAndImmutableBoard]
+    permission_classes = [permissions.IsAuthenticated, IsBoardMember]
 
     def get_queryset(self):
         task_id = self.kwargs.get("task_id")
-        return Comment.objects.filter(task_id=task_id)
+        task=generics.get_object_or_404(Task, id=task_id)
+        return Comment.objects.filter(task=task)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        if not queryset.exists():
+            return Response({"detail": "No comments found for this task."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         task_id = kwargs.get("task_id")
